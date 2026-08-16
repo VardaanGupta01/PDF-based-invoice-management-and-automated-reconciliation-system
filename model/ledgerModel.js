@@ -40,6 +40,8 @@ class LedgerModel {
         const [rows] = await db.execute(
             `SELECT
                 l.id,
+                l.bank_account_id,
+                ba.business_id,
                 l.target_month,
                 l.target_year,
                 l.created_at,
@@ -51,7 +53,8 @@ class LedgerModel {
             JOIN bank_accounts ba ON l.bank_account_id = ba.id
             LEFT JOIN ledger_records lr ON l.id = lr.ledger_id
             WHERE l.id = ?
-            GROUP BY l.id`,
+            GROUP BY l.id, l.bank_account_id, ba.business_id, l.target_month, l.target_year, l.created_at,
+                     ba.bank_name, ba.account_nickname, ba.account_last_four`,
             [id]
         );
         return rows[0] || null;

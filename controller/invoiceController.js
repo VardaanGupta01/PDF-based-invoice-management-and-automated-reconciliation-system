@@ -15,15 +15,36 @@ const uploadInvoice = async (req, res) => {
             return res.status(400).json({ message: "ledger_id is required" });
         }
 
-        // 1. Upload memory buffer directly to Cloudinary
-        const cloudinaryResult = await uploadToCloudinary(req.file.buffer, {
-            folder: 'invoices',
-            resource_type: 'raw'
-        });
+        // 1. Upload memory buffer to Cloudinary with local disk fallback
+        let fileUrl = '';
+        let cloudinaryId = null;
 
-        const fileUrl = cloudinaryResult.secure_url;
+        try {
+            if (process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_URL) {
+                const cloudinaryResult = await uploadToCloudinary(req.file.buffer, {
+                    folder: 'invoices',
+                    resource_type: 'raw'
+                });
+                fileUrl = cloudinaryResult.secure_url;
+                cloudinaryId = cloudinaryResult.public_id;
+            } else {
+                throw new Error('Cloudinary not configured');
+            }
+        } catch (cloudErr) {
+            console.warn('[Invoice Upload] Cloudinary upload failed or unconfigured, using local file storage fallback:', cloudErr.message);
+            const fs = require('fs');
+            const path = require('path');
+            const { uploadDirs } = require('../config/env');
+            if (!fs.existsSync(uploadDirs.invoices)) {
+                fs.mkdirSync(uploadDirs.invoices, { recursive: true });
+            }
+            const fileName = `${Date.now()}_${req.file.originalname}`;
+            const localPath = path.join(uploadDirs.invoices, fileName);
+            fs.writeFileSync(localPath, req.file.buffer);
+            fileUrl = `/uploads/invoices/${fileName}`;
+        }
 
-        // 2. Save Cloudinary URL record to ledger_files table
+        // 2. Save URL record to ledger_files table
         const ledger_file_id = await LedgerModel.addFile(ledger_id, fileUrl, 'invoice_pdf');
 
         // 3. Parse the PDF directly from RAM buffer — returns array of invoice records
@@ -40,16 +61,16 @@ const uploadInvoice = async (req, res) => {
         });
 
         res.status(200).json({
-            message: `PDF uploaded to Cloudinary and parsed successfully! ${insertedIds.length} record(s) created.`,
+            message: `PDF uploaded and parsed successfully! ${insertedIds.length} record(s) created.`,
             fileUrl: fileUrl,
             fileName: req.file.originalname,
-            cloudinaryId: cloudinaryResult.public_id,
+            cloudinaryId: cloudinaryId,
             records: invoiceRecords,
             recordIds: insertedIds
         });
     } catch (error) {
         console.error("Upload/Parse error:", error);
-        res.status(500).json({ message: "Server error during PDF processing" });
+        res.status(500).json({ message: error.message || "Server error during PDF processing" });
     }
 };
 

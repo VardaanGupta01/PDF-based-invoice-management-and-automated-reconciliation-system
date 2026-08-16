@@ -140,20 +140,42 @@ const uploadLedgerFiles = async (req, res) => {
             const ext = path.extname(file.originalname).toLowerCase();
             const fileType = (ext === '.pdf') ? 'invoice_pdf' : 'excel_ledger';
 
-            // Upload memory buffer directly to Cloudinary
-            const cloudinaryResult = await uploadToCloudinary(file.buffer, {
-                folder: fileType === 'invoice_pdf' ? 'invoices' : 'ledgers',
-                resource_type: ext === '.pdf' ? 'raw' : 'auto'
-            });
+            let fileUrl = '';
+            let cloudinaryId = null;
 
-            const fileUrl = cloudinaryResult.secure_url;
+            // Attempt Cloudinary upload first, fallback to local storage if unconfigured or fails
+            try {
+                if (process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_URL) {
+                    const cloudinaryResult = await uploadToCloudinary(file.buffer, {
+                        folder: fileType === 'invoice_pdf' ? 'invoices' : 'ledgers',
+                        resource_type: ext === '.pdf' ? 'raw' : 'auto'
+                    });
+                    fileUrl = cloudinaryResult.secure_url;
+                    cloudinaryId = cloudinaryResult.public_id;
+                } else {
+                    throw new Error('Cloudinary not configured');
+                }
+            } catch (cloudErr) {
+                console.warn('[Ledger Upload] Cloudinary upload failed or unconfigured, using local file storage fallback:', cloudErr.message);
+                const fs = require('fs');
+                const { uploadDirs } = require('../config/env');
+                const targetDir = fileType === 'invoice_pdf' ? uploadDirs.invoices : uploadDirs.bankStatements;
+                if (!fs.existsSync(targetDir)) {
+                    fs.mkdirSync(targetDir, { recursive: true });
+                }
+                const fileName = `${Date.now()}_${file.originalname}`;
+                const localPath = path.join(targetDir, fileName);
+                fs.writeFileSync(localPath, file.buffer);
+                fileUrl = `/uploads/${fileType === 'invoice_pdf' ? 'invoices' : 'bank_statements'}/${fileName}`;
+            }
+
             const fileId = await LedgerModel.addFile(ledgerId, fileUrl, fileType);
 
             const fileResult = {
                 id: fileId,
                 originalName: file.originalname,
                 fileUrl,
-                cloudinaryId: cloudinaryResult.public_id,
+                cloudinaryId,
                 fileType,
                 size: file.size,
                 records: []
@@ -181,7 +203,7 @@ const uploadLedgerFiles = async (req, res) => {
         const totalRecords = savedFiles.reduce((sum, f) => sum + f.records.length, 0);
 
         await logAudit(req, {
-            businessId: ledger ? ledger.business_id : null,
+            businessId: ledger ? (ledger.business_id || ledger.businessId || null) : null,
             action: 'UPLOAD_LEDGER',
             entityType: 'ledger_file',
             entityId: ledgerId,
@@ -196,7 +218,10 @@ const uploadLedgerFiles = async (req, res) => {
 
     } catch (error) {
         console.error('Error uploading ledger files:', error);
-        res.status(500).json({ success: false, message: 'Server error during file upload' });
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Server error during file upload'
+        });
     }
 };
 
