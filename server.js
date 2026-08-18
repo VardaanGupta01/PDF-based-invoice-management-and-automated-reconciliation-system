@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
+const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
@@ -21,6 +22,11 @@ const teamRoute = require('./routes/teamRoute');
 
 
 const app = express();
+
+// Render and other reverse proxies set X-Forwarded-* headers.
+// Trust first proxy hop so rate limit + client IP logic behave correctly.
+app.set('trust proxy', 1);
+
 const uploadsRoot = path.join(process.cwd(), 'uploads');
 fs.mkdirSync(path.join(uploadsRoot, 'invoices'), { recursive: true });
 fs.mkdirSync(path.join(uploadsRoot, 'bank_statements'), { recursive: true });
@@ -76,6 +82,11 @@ app.use((req, res, next) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+        return res.status(status).json({ error: `Upload error: ${err.message}` });
+    }
+
     console.error(err.stack);
     res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });

@@ -29,6 +29,27 @@ const upload = multer({
     limits: { fileSize: 20 * 1024 * 1024 } // 20 MB per file
 });
 
+const parseLedgerUpload = (req, res, next) => {
+    const fieldsUpload = upload.fields([
+        { name: 'files', maxCount: 10 },
+        { name: 'invoice', maxCount: 10 },
+        { name: 'file', maxCount: 10 }
+    ]);
+
+    fieldsUpload(req, res, (err) => {
+        if (err) return next(err);
+
+        const groupedFiles = req.files || {};
+        req.files = [
+            ...(groupedFiles.files || []),
+            ...(groupedFiles.invoice || []),
+            ...(groupedFiles.file || [])
+        ];
+
+        next();
+    });
+};
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 // Get all ledgers for the user's active business
@@ -41,7 +62,7 @@ router.get('/:id', authMiddleware, ledgerController.getLedgerById);
 router.post('/', authMiddleware, checkRole(['admin', 'accountant']), ledgerController.createLedger);
 
 // Upload files to an existing ledger (up to 10 files at once)
-router.post('/:id/files', authMiddleware, checkRole(['admin', 'accountant']), upload.array('files', 10), ledgerController.uploadLedgerFiles);
+router.post('/:id/files', authMiddleware, checkRole(['admin', 'accountant']), parseLedgerUpload, ledgerController.uploadLedgerFiles);
 
 // Get all files for a ledger
 router.get('/:id/files', authMiddleware, ledgerController.getLedgerFiles);
