@@ -56,7 +56,7 @@ const pct = (num, den) => den === 0 ? "0.0" : ((num / den) * 100).toFixed(1);
 // Calculate trend vs previous month - returns { value: "+x.x%", direction: "up" | "down" | "none" }
 const calculateTrend = (currentValue, prevValue) => {
   if (prevValue === 0 || prevValue === null || prevValue === undefined) {
-    return { value: "0.0%", direction: "none" };
+    return { value: "N/A", direction: "none" };
   }
   
   const change = ((currentValue - prevValue) / prevValue) * 100;
@@ -69,17 +69,18 @@ const calculateTrend = (currentValue, prevValue) => {
 };
 
 /* Reusable Performance Card */
-function PerformanceCard({ title, value, count, total, trend, trendDir, fillClass }) {
+function PerformanceCard({ title, value, count, total, trend, trendDir, fillClass, rightLabel }) {
   // If no trend data (direction === "none"), show grey color
   const trendClass = trendDir === "none" ? "trend-neutral" : trendDir === "up" ? "trend-up" : "trend-down";
   const showIcon = trendDir === "up" ? <TrendingUpIcon /> : trendDir === "down" ? <TrendingDownIcon /> : <MinusIcon />;
+  const badgeText = rightLabel ?? trend;
   
   return (
     <div className="overall-stat-card">
       <div className="overall-stat-header">
         <h4>{title}</h4>
         <span className={`overall-stat-trend ${trendClass}`}>
-          {showIcon} {trend}
+          {rightLabel ? null : showIcon} {badgeText}
         </span>
       </div>
       <div className="overall-stat-value">{value}%</div>
@@ -222,8 +223,9 @@ export function DashboardPage() {
           value={pct(overallStats.all_time_exact, overallStats.total_records_processed)}
           count={overallStats.all_time_exact}
           total={overallStats.total_records_processed}
-          trend="--"
+          trend="N/A"
           trendDir="none"
+          rightLabel={`${overallStats.all_time_exact.toLocaleString("en-IN")}`}
           fillClass="fill-green"
         />
         <PerformanceCard
@@ -231,8 +233,9 @@ export function DashboardPage() {
           value={pct(overallStats.all_time_partial, overallStats.total_records_processed)}
           count={overallStats.all_time_partial}
           total={overallStats.total_records_processed}
-          trend="--"
+          trend="N/A"
           trendDir="none"
+          rightLabel={`${overallStats.all_time_partial.toLocaleString("en-IN")}`}
           fillClass="fill-amber"
         />
         <PerformanceCard
@@ -240,8 +243,9 @@ export function DashboardPage() {
           value={pct(overallStats.all_time_unmatched, overallStats.total_records_processed)}
           count={overallStats.all_time_unmatched}
           total={overallStats.total_records_processed}
-          trend="--"
+          trend="N/A"
           trendDir="none"
+          rightLabel={`${overallStats.all_time_unmatched.toLocaleString("en-IN")}`}
           fillClass="fill-rose"
         />
       </div>

@@ -13,7 +13,6 @@ export function StatementGroupDetails() {
     const [groupInfo, setGroupInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [reconciliationUpdates, setReconciliationUpdates] = useState({});
 
     useEffect(() => {
         const fetchStatementDetails = async () => {
@@ -49,35 +48,6 @@ export function StatementGroupDetails() {
             fetchStatementDetails();
         }
     }, [id]);
-
-    const handleReconciliationToggle = async (recordId, currentState) => {
-        try {
-            const newState = currentState === 'Yes' ? 'No' : 'Yes';
-            
-            // Update UI optimistically
-            setTransactions(prev => prev.map(txn =>
-                txn.id === recordId ? { ...txn, reconciled: newState } : txn
-            ));
-
-            // Update on backend (you may need to add this endpoint)
-            // Backend update endpoint can be wired through the shared API helper when implemented.
-            //     { isReconciled: newState === 'Yes' },
-            //     { headers: { Authorization: `Bearer ${token}` } }
-            // );
-        } catch (err) {
-            console.error('Error updating reconciliation:', err);
-            // Revert on error
-            setTransactions(prev => prev.map(txn =>
-                txn.id === recordId ? { ...txn, reconciled: currentState } : txn
-            ));
-        }
-    };
-
-    const handleTransactionUpdate = (id, field, value) => {
-        setTransactions(prev => prev.map(txn =>
-            txn.id === id ? { ...txn, [field]: value } : txn
-        ));
-    };
 
     const formatDate = (dateObj) => {
         if (!dateObj) return '';
@@ -127,8 +97,6 @@ export function StatementGroupDetails() {
                                 <thead>
                                     <tr>
                                         <th style={{ width: '50px' }}>#</th>
-                                        <th>Invoice #</th>
-                                        <th>Customer Name</th>
                                         <th style={{ width: '120px' }}>Reconciled</th>
                                         <th style={{ width: '150px' }}>Date</th>
                                         <th style={{ width: '120px' }}>Amount</th>
@@ -140,12 +108,6 @@ export function StatementGroupDetails() {
                                     {transactions.map((txn, index) => (
                                         <tr key={txn.id}>
                                             <td>{index + 1}</td>
-                                            <td>
-                                                {txn.invoiceNumber || '—'}
-                                            </td>
-                                            <td>
-                                                {txn.customerName || '—'}
-                                            </td>
                                             <td className="reconciled-cell">
                                                 {txn.reconciled}
                                             </td>
