@@ -100,8 +100,11 @@ const startServer = async () => {
         await initSchema();
         console.log('Database initialized successfully.');
     } catch (error) {
-        console.error('Server configuration/startup error:', error.message);
-        process.exit(1);
+        console.error('Server configuration/startup error:', error);
+        setTimeout(() => {
+            process.exit(1);
+        }, 500);
+        return;
     }
 
     app.listen(PORT, () => {
