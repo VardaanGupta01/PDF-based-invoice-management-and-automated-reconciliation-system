@@ -26,13 +26,13 @@ const getEnvConfig = () => {
 
     cachedConfig = {
         port: Number(process.env.PORT) || 3000,
-        jwtSecret: process.env.JWT_SECRET,
+        jwtSecret: String(process.env.JWT_SECRET || '').trim(),
         mysql: {
-            host: process.env.MYSQL_HOST,
+            host: String(process.env.MYSQL_HOST || '').trim(),
             port: Number(process.env.MYSQL_PORT),
-            user: process.env.MYSQL_USER,
-            password: process.env.MYSQL_PASSWORD,
-            database: process.env.MYSQL_DATABASE,
+            user: String(process.env.MYSQL_USER || '').trim(),
+            password: String(process.env.MYSQL_PASSWORD || '').trim(),
+            database: String(process.env.MYSQL_DATABASE || '').trim(),
             ssl: {
                 rejectUnauthorized: false
             }
