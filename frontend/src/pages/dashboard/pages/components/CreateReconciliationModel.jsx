@@ -26,6 +26,7 @@ export function CreateReconcilationsModel({ isOpen, onClose }) {
     const [success,         setSuccess]         = useState('');
 
     const token = useAuthStore(state => state.token);
+    const user = useAuthStore(state => state.user);
 
     useEffect(() => {
         if (isOpen) {
@@ -43,10 +44,16 @@ export function CreateReconcilationsModel({ isOpen, onClose }) {
 
             const [ledgersRes, statementsRes] = await Promise.all([
                 axios.get(apiUrl('/ledger'), {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'x-business-id': user?.lastActiveBusinessId || ''
+                    }
                 }),
                 axios.get(apiUrl('/bank-statement/groups'), {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'x-business-id': user?.lastActiveBusinessId || ''
+                    }
                 })
             ]);
 

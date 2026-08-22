@@ -21,6 +21,7 @@ export function ReconciliationsPage() {
     const { showCreateModalOverlay, setShowCreateModalOverlay } = useOutletContext();
     const navigate  = useNavigate();
     const token     = useAuthStore(s => s.token);
+    const user      = useAuthStore(s => s.user);
 
     const [reconciliations, setReconciliations] = useState([]);
     const [loading, setLoading]                 = useState(true);
@@ -31,7 +32,7 @@ export function ReconciliationsPage() {
         try {
             setLoading(true);
             setError('');
-            const res  = await fetch(apiUrl('/reconciliation/'), {
+            const res  = await fetch(apiUrl(`/reconciliation/?businessId=${user?.lastActiveBusinessId || ''}`), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
