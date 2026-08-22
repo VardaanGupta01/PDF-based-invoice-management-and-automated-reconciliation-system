@@ -7,7 +7,7 @@ let cachedConfig;
 
 const parseCsvList = (value) => String(value || '')
     .split(',')
-    .map((item) => item.trim())
+    .map((item) => item.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
 const getEnvConfig = () => {
