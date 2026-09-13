@@ -21,8 +21,9 @@ const updateActiveBusiness = async (req, res) => {
 const getSettingsData = async (req, res) => {
     try {
         const userId = getUserId(req);
-        const businesses = await BusinessModel.findByUserId(userId);
-        const bankAccounts = await AccountModel.findByUserId(userId);
+        // CHANGED: was BusinessModel.findByUserId / AccountModel.findByUserId (owned-only)
+        const businesses = await BusinessModel.findAccessibleByUserId(userId);
+        const bankAccounts = await AccountModel.findAccessibleByUserId(userId);
         res.status(200).json({ businesses, bankAccounts });
     } catch (error) {
         console.error(error);
@@ -73,8 +74,13 @@ const deleteBusiness = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = getUserId(req);
-        
-        await BusinessModel.delete(id, userId);
+
+        const affectedRows = await BusinessModel.delete(id, userId);
+        // FIXED: previously always returned 200 even when nothing was deleted
+        // (e.g. an invited accountant trying to delete a business they don't own)
+        if (affectedRows === 0) {
+            return res.status(403).json({ message: 'Only the business owner can delete this business.' });
+        }
         res.status(200).json({ message: 'Business deleted successfully' });
     } catch (error) {
         console.error(error);
@@ -100,7 +106,11 @@ const deleteBankAccount = async (req, res) => {
         const { id } = req.params;
         const userId = getUserId(req);
 
-        await AccountModel.delete(id, userId);
+        const affectedRows = await AccountModel.delete(id, userId);
+        // FIXED: same silent-failure issue as deleteBusiness
+        if (affectedRows === 0) {
+            return res.status(403).json({ message: 'You do not have permission to delete this bank account.' });
+        }
         res.status(200).json({ message: 'Bank account deleted successfully' });
     } catch (error) {
         console.error(error);

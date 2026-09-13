@@ -198,7 +198,7 @@ CREATE TABLE IF NOT EXISTS invitations (
     role ENUM('accountant', 'viewer') NOT NULL DEFAULT 'viewer',
     token VARCHAR(255) UNIQUE NOT NULL,
     expires_at DATETIME NOT NULL,
-    status ENUM('pending', 'accepted', 'expired') DEFAULT 'pending',
+    status ENUM('pending', 'accepted', 'expired', 'revoked') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE,
     FOREIGN KEY (inviter_user_id) REFERENCES users (id) ON DELETE CASCADE

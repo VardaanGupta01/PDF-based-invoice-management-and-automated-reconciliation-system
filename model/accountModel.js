@@ -10,12 +10,23 @@ class AccountModel {
     }
 
     static async findByUserId(userId) {
-        // Find all accounts for businesses owned by this user
         const [rows] = await db.execute(
             `SELECT ba.* FROM bank_accounts ba 
              JOIN businesses b ON ba.business_id = b.id 
              WHERE b.user_id = ?`,
             [userId]
+        );
+        return rows;
+    }
+
+    // NEW — bank accounts for owned AND shared (accountant/viewer/admin) businesses
+    static async findAccessibleByUserId(userId) {
+        const [rows] = await db.execute(
+            `SELECT ba.* FROM bank_accounts ba
+             JOIN businesses b ON ba.business_id = b.id
+             LEFT JOIN user_business_roles ubr ON ubr.business_id = b.id AND ubr.user_id = ?
+             WHERE b.user_id = ? OR ubr.user_id IS NOT NULL`,
+            [userId, userId]
         );
         return rows;
     }
@@ -36,13 +47,16 @@ class AccountModel {
         return rows[0] || null;
     }
 
+    // FIXED — was owner-only, so an invited "accountant" could never actually
+    // delete a bank account even though checkRole(['admin','accountant']) let the request through.
+    // It "succeeded" with 0 affected rows and lied to the user.
     static async delete(id, userId) {
-        // Must ensure the user deleting the account actually owns the business it belongs to
         const [result] = await db.execute(
             `DELETE ba FROM bank_accounts ba
              JOIN businesses b ON ba.business_id = b.id
-             WHERE ba.id = ? AND b.user_id = ?`,
-            [id, userId]
+             LEFT JOIN user_business_roles ubr ON ubr.business_id = b.id AND ubr.user_id = ?
+             WHERE ba.id = ? AND (b.user_id = ? OR ubr.role = 'accountant')`,
+            [userId, id, userId]
         );
         return result.affectedRows;
     }

@@ -15,12 +15,14 @@ function Auth() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get('mode');
+  const redirectUrl = searchParams.get('redirect');
+  const emailParam = searchParams.get('email');
 
   const [isLogin, setIsLogin] = useState(mode !== 'signup' && mode !== 'forgot');
   const [isForgot, setIsForgot] = useState(mode === 'forgot');
 
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(emailParam || '');
   const [password, setPassword] = useState('');
 
   const [error, setError] = useState(null);
@@ -31,14 +33,24 @@ function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+    if (emailParam && !email) {
+      setEmail(emailParam);
     }
-  }, [isAuthenticated, navigate]);
+  }, [emailParam]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(redirectUrl || '/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate, redirectUrl]);
 
   useEffect(() => {
     if (!mode) {
-      setSearchParams({ mode: "login" });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('mode', 'login');
+        return next;
+      }, { replace: true });
       setIsLogin(true);
       setIsForgot(false);
     } else if (mode === 'forgot') {
@@ -48,7 +60,7 @@ function Auth() {
       setIsForgot(false);
       setIsLogin(mode !== 'signup');
     }
-  }, [mode]);
+  }, [mode, setSearchParams]);
 
   // Evaluate password strength using zxcvbn on Sign Up
   const strengthResult = useMemo(() => {
@@ -136,15 +148,19 @@ function Auth() {
         login(data.user, data.token);
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
+          navigate(redirectUrl || '/dashboard');
+        }, 800);
       } else {
         setSuccess('Registration successful! Please log in.');
         setTimeout(() => {
-          setSearchParams({ mode: 'login' });
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.set('mode', 'login');
+            return next;
+          });
           setPassword('');
           setSuccess(null);
-        }, 2000);
+        }, 1500);
       }
     } catch (err) {
       setError(err.message);
@@ -301,17 +317,17 @@ function Auth() {
           {isForgot ? (
             <>
               Remember your password?
-              <span onClick={() => setSearchParams({ mode: 'login' })}>Sign In</span>
+              <span onClick={() => setSearchParams((p) => { const n = new URLSearchParams(p); n.set('mode', 'login'); return n; })}>Sign In</span>
             </>
           ) : isLogin ? (
             <>
               Don't have an account?
-              <span onClick={() => setSearchParams({ mode: 'signup' })}>Sign Up</span>
+              <span onClick={() => setSearchParams((p) => { const n = new URLSearchParams(p); n.set('mode', 'signup'); return n; })}>Sign Up</span>
             </>
           ) : (
             <>
               Already have an account?
-              <span onClick={() => setSearchParams({ mode: 'login' })}>Log In</span>
+              <span onClick={() => setSearchParams((p) => { const n = new URLSearchParams(p); n.set('mode', 'login'); return n; })}>Log In</span>
             </>
           )}
         </div>

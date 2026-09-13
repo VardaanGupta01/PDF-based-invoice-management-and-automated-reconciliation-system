@@ -75,7 +75,7 @@ const SettingsIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
 );
 
-export function Sidebar() {
+export function Sidebar({ pendingInviteCount = 0 }) {
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const navigate = useNavigate();
@@ -109,8 +109,22 @@ export function Sidebar() {
                 <NavLink to="./reconciliations" className={`nav-item`}>
                     <ReconciliationIcon /> Reconciliations
                 </NavLink>
-                <NavLink to="./settings" className={`nav-item`}>
+                <NavLink to="./settings" className={`nav-item`} style={{ display: 'flex', alignItems: 'center' }}>
                     <SettingsIcon /> Settings
+                    {pendingInviteCount > 0 && (
+                        <span style={{
+                            marginLeft: 'auto',
+                            background: '#ef4444',
+                            color: '#ffffff',
+                            borderRadius: '9999px',
+                            padding: '1px 7px',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
+                            lineHeight: '1.4'
+                        }}>
+                            {pendingInviteCount}
+                        </span>
+                    )}
                 </NavLink>
                 <NavLink className="nav-item" id="logout-btn" onClick={() => {
                     logout();
