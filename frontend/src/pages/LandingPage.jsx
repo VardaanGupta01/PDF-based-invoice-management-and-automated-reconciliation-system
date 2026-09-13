@@ -279,7 +279,7 @@ function LandingPage() {
           </div>
           ReconFlow
         </div>
-        <p className="footer-copy">Created By ~ Bhavay, Yash, Herit, Rushal, Vardaan</p>
+        <p className="footer-copy">Created By ~ Vardaan, Bhavay, Yash ,Rushal </p>
       </footer>
     </div>
   );
